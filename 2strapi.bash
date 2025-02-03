@@ -1,5 +1,5 @@
 #!/bin/bash
-# 250202 2strapi.bash 26/01/25
+# 250203 2strapi.bash 26/01/25
 # Import a table from an origin postgresql db into a table in a strapi project
 #	Create destination table relevant to  Strapi table structure
 #	Create Stapi model
@@ -311,7 +311,7 @@ create_constrainsts() {
 #--------------------------------------------------------------------------------------------------------#
 function 2strapi_type() {
 	type=$1
-	s_type=$type
+	s_type=$type			# Strapi type
 	s_plus=""
 	s_minLength=""
 	s_maxLength=""
@@ -321,6 +321,8 @@ function 2strapi_type() {
 	shared_types=(boolean date integer text)
 	if [[ " ${shared_types[@]} " =~ " $type " ]]; then
 		s_type=$type
+	elif [[ "$type" == "bigint" ]]; then
+		s_type=biginteger
 	elif [[ "$type" == "character(1)" ]]; then
 		s_type=string
 		s_plus=","				
