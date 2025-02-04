@@ -367,9 +367,10 @@ function 2strapi_type() {
 function create_model() {
 	# Strapi model creation
 	model=${model_name}_shema.json
+#01  "collectionName": "'$table'",
 	echo '{
   "kind": "collectionType",
-  "collectionName": "'$table'",
+  "collectionName": "'$table1'",
   "info": {
     "singularName": "'$model_name'",
     "pluralName": "'${model_name}s'",
