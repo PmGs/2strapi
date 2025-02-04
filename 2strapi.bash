@@ -5,13 +5,15 @@
 #	Create Stapi model
 ## Usage : ./2strapi.bash <config_file> <table>
 
+#01 250204 table1 - to have destination table name different to origin table
+
 ## Completeness
 #  not all data types managed
 #  function 2strapi_type must be completed
 
 ## A useful but dangerous command
-# rm -fR  dist/src/api/<table>; rm src/api/<table>; psql bons -c "DROP TABLE <tables>"
-# delete all from this collection '<table>', to be used if you want to relaunch the script on the same table
+# rm -fR  dist/src/api/<table1>; rm -fR src/api/<table1>; psql <DB_NAME1> -c "DROP TABLE <table1s>"
+#  to delete all from this collection '<table>', to be used if you want to relaunch the script on the same table
 
 ## prerequisites
 # CREATE EXTENSION dblink;				-- with postgres user
@@ -36,11 +38,17 @@ VERBOSE=false			# True to print internal variables
 
 config_file=$1
 table=$2
+table1=$3			#01
+#01	echo "Usage : ./2strapi.bash <config_file> <table>"
 if [[ ! -f "$config_file" || -z "$table" ]]; then
-	echo "Usage : ./2strapi.bash <config_file> <table>"
+	echo "Usage : ./2strapi.bash <config_file> <table> [<table1>]
+		table1	: name of table generated - default = table"
 	exit
 fi
-model_name="${table%s}"				# remove final s
+[[ -z "$table1" ]] && table1=$table		#01
+
+#01 model_name="${table%s}"				# remove final s
+model_name="${table1%s}"				# remove final s
 model_name="${model_name//_/-}"			# _ -> -
 
 pos=$(expr index "$model_name" "-")
@@ -70,15 +78,21 @@ fi
 } # End must
 #--------------------------------------------------------------------------------------------------------#
 function check_i(){
+	# Check if table ends with s
+	if [[ "$table1" != *s ]]; then										#01
+		echo "table ($table1) does not end wiht 's'"
+		exit 1
+	fi
 	# Check if table exists in destination db
-	psql -U $DB_USER -d $DB_NAME1 -t -c "SELECT to_regclass('$table');" | grep -q "$table"
+	#01 psql -U $DB_USER -d $DB_NAME1 -t -c "SELECT to_regclass('$table');" | grep -q "$table"
+	psql -U $DB_USER -d $DB_NAME1 -t -c "SELECT to_regclass('$table1');" | grep -q "$table"			#01
 	if [ $? -eq 0 ]; then
-		echo "Table $table exists in destination DB ($DB_NAME1)."
+		echo "Table ($table1) exists in destination DB ($DB_NAME1)."
 		exit 1
 	fi
 	# Check if model exists in destination project
 	if [[ -f "$DIR1/src/api/$table" ]]; then
- 	 	echo "Model (src/api/$table) exists in destination project."
+ 	 	echo "Model (src/api/$model_name) exists in destination project."
 		exit 1
 	fi
 	# Check if table exists in origin db
@@ -298,16 +312,22 @@ function columns_d() {
 #--------------------------------------------------------------------------------------------------------#
 create_constrainsts() {
 	# Indexes et contrainsts creation
-	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD PRIMARY KEY (id);"
+#01 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD PRIMARY KEY (id);"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD PRIMARY KEY (id);"
 	if $PUBLISH; then
-		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table}_document_id_idx ON $table (document_id,locale,published_at);"
+#01		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table}_document_id_idx ON $table (document_id,locale,published_at);"
+		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table1}_document_id_idx ON $table1 (document_id,locale,published_at);"
 	else
-		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table}_document_id_idx ON $table (document_id,locale);"
+#01		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table}_document_id_idx ON $table (document_id,locale);"
+		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table1}_document_id_idx ON $table1 (document_id,locale);"
 	fi
-	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_created_by_id_fk FOREIGN KEY (created_by_id) REFERENCES admin_users(id);"
-	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES admin_users(id);"
-	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_deleted_by_id_fk FOREIGN KEY (deleted_by_id) REFERENCES admin_users(id);"
-}
+#01	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_created_by_id_fk FOREIGN KEY (created_by_id) REFERENCES admin_users(id);"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD CONSTRAINT ${table1}_created_by_id_fk FOREIGN KEY (created_by_id) REFERENCES admin_users(id);"
+#01	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES admin_users(id);"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD CONSTRAINT ${table1}_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES admin_users(id);"
+#01	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_deleted_by_id_fk FOREIGN KEY (deleted_by_id) REFERENCES admin_users(id);"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD CONSTRAINT ${table1}_deleted_by_id_fk FOREIGN KEY (deleted_by_id) REFERENCES admin_users(id);"
+} # End create_constraints
 #--------------------------------------------------------------------------------------------------------#
 function 2strapi_type() {
 	type=$1
@@ -422,7 +442,7 @@ export default factories.createCoreService('api::$model_name.$model_name');" > s
 must					# Prerequisites
 check_i					# Initial checks
 columns_o				# Columns & types from origin table -> init destination fileds
-id						# Copy or create id
+id					# Copy or create id
 document_id				# ...
 created_at
 updated_at
@@ -434,7 +454,8 @@ deleted_by_id
 locale
 columns_d				# Columns & types of destination table
 # cde to create destination table
-cde0="CREATE TABLE $table AS (SELECT * FROM dblink('dbname=$DB_NAME2 host=$DB_HOST2 user=$DB_USER','$select FROM $table') AS rt ($dblink_fields))"
+#01 cde0="CREATE TABLE $table AS (SELECT * FROM dblink('dbname=$DB_NAME2 host=$DB_HOST2 user=$DB_USER','$select FROM $table') AS rt ($dblink_fields))"
+cde0="CREATE TABLE $table1 AS (SELECT * FROM dblink('dbname=$DB_NAME2 host=$DB_HOST2 user=$DB_USER','$select FROM $table') AS rt ($dblink_fields))"		#01
 cde="psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c \"$cde0\""
 
 if $VERBOSE; then
