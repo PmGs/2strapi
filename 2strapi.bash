@@ -178,7 +178,6 @@ function id() {
 	else
 		id_select="SELECT CAST(id AS INTEGER) AS id"
 	fi
-	id_constraint="ALTER TABLE $table ADD CONSTRAINT ${table}_pkey PRIMARY KEY (id);"
 	column_delete 'id'
 } # End id
 #--------------------------------------------------------------------------------------------------------#
@@ -308,6 +307,10 @@ function columns_d() {
 create_constrainsts() {
 	# Indexes et contrainsts creation
 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD PRIMARY KEY (id);"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE SEQUENCE ${table1}_id_seq START WITH 1;"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ALTER COLUMN id SET DEFAULT nextval('${table1}_id_seq');"
+	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "SELECT setval('${table1}_id_seq', (SELECT MAX(id) FROM $table1));"
+	#
 	if $PUBLISH; then
 		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table1}_document_id_idx ON $table1 (document_id,locale,published_at);"
 	else
@@ -455,7 +458,6 @@ echo "
 	column_types_o=$column_types_o
 	columns_d=$columns_d
 	column_types_d=$column_types_d
-	id_constraint=$id_constraint
 	id_select=$id_select
 	document_id_select=$document_id_select
 	created_at_select=$created_at_select
