@@ -1,18 +1,16 @@
 #!/bin/bash
-# 250203 2strapi.bash 26/01/25
+# 250204 2strapi.bash 26/01/25
 # Import a table from an origin postgresql db into a table in a strapi project
 #	Create destination table relevant to  Strapi table structure
 #	Create Stapi model
 ## Usage : ./2strapi.bash <config_file> <table>
-
-#01 250204 table1 - to have destination table name different to origin table
 
 ## Completeness
 #  not all data types managed
 #  function 2strapi_type must be completed
 
 ## A useful but dangerous command
-# rm -fR  dist/src/api/<table1>; rm -fR src/api/<table1>; psql <DB_NAME1> -c "DROP TABLE <table1s>"
+# rm -fR  dist/src/api/<table1>; rm -fR src/api/<table1>; psql <DB_NAME1> -c "DROP TABLE <table1s> CASACDE"
 #  to delete all from this collection '<table>', to be used if you want to relaunch the script on the same table
 
 ## prerequisites
@@ -38,16 +36,14 @@ VERBOSE=false			# True to print internal variables
 
 config_file=$1
 table=$2
-table1=$3			#01
-#01	echo "Usage : ./2strapi.bash <config_file> <table>"
+table1=$3			# destinantion table
 if [[ ! -f "$config_file" || -z "$table" ]]; then
 	echo "Usage : ./2strapi.bash <config_file> <table> [<table1>]
 		table1	: name of table generated - default = table"
 	exit
 fi
-[[ -z "$table1" ]] && table1=$table		#01
+[[ -z "$table1" ]] && table1=$table
 
-#01 model_name="${table%s}"				# remove final s
 model_name="${table1%s}"				# remove final s
 model_name="${model_name//_/-}"			# _ -> -
 
@@ -79,13 +75,12 @@ fi
 #--------------------------------------------------------------------------------------------------------#
 function check_i(){
 	# Check if table ends with s
-	if [[ "$table1" != *s ]]; then										#01
+	if [[ "$table1" != *s ]]; then
 		echo "table ($table1) does not end wiht 's'"
 		exit 1
 	fi
 	# Check if table exists in destination db
-	#01 psql -U $DB_USER -d $DB_NAME1 -t -c "SELECT to_regclass('$table');" | grep -q "$table"
-	psql -U $DB_USER -d $DB_NAME1 -t -c "SELECT to_regclass('$table1');" | grep -q "$table"			#01
+	psql -U $DB_USER -d $DB_NAME1 -t -c "SELECT to_regclass('$table1');" | grep -q "$table"
 	if [ $? -eq 0 ]; then
 		echo "Table ($table1) exists in destination DB ($DB_NAME1)."
 		exit 1
@@ -312,20 +307,14 @@ function columns_d() {
 #--------------------------------------------------------------------------------------------------------#
 create_constrainsts() {
 	# Indexes et contrainsts creation
-#01 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD PRIMARY KEY (id);"
 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD PRIMARY KEY (id);"
 	if $PUBLISH; then
-#01		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table}_document_id_idx ON $table (document_id,locale,published_at);"
 		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table1}_document_id_idx ON $table1 (document_id,locale,published_at);"
 	else
-#01		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table}_document_id_idx ON $table (document_id,locale);"
 		psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "CREATE INDEX ${table1}_document_id_idx ON $table1 (document_id,locale);"
 	fi
-#01	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_created_by_id_fk FOREIGN KEY (created_by_id) REFERENCES admin_users(id);"
 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD CONSTRAINT ${table1}_created_by_id_fk FOREIGN KEY (created_by_id) REFERENCES admin_users(id);"
-#01	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES admin_users(id);"
 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD CONSTRAINT ${table1}_updated_by_id_fk FOREIGN KEY (updated_by_id) REFERENCES admin_users(id);"
-#01	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table ADD CONSTRAINT ${table}_deleted_by_id_fk FOREIGN KEY (deleted_by_id) REFERENCES admin_users(id);"
 	psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c "ALTER TABLE $table1 ADD CONSTRAINT ${table1}_deleted_by_id_fk FOREIGN KEY (deleted_by_id) REFERENCES admin_users(id);"
 } # End create_constraints
 #--------------------------------------------------------------------------------------------------------#
@@ -357,6 +346,8 @@ function 2strapi_type() {
 		s_plus=","				
 		s_precision=18
 		s_scale=9
+	elif [[ "$type" =~ "text" ]]; then
+		s_type=string			# Strapi text type (=long text) / string (short text) to be able to create relation
 	else
 		echo "db type ($type) must be mapped to strapi type in 2strapi_type function"
 		exit 1	
@@ -367,7 +358,6 @@ function 2strapi_type() {
 function create_model() {
 	# Strapi model creation
 	model=${model_name}_shema.json
-#01  "collectionName": "'$table'",
 	echo '{
   "kind": "collectionType",
   "collectionName": "'$table1'",
@@ -455,8 +445,7 @@ deleted_by_id
 locale
 columns_d				# Columns & types of destination table
 # cde to create destination table
-#01 cde0="CREATE TABLE $table AS (SELECT * FROM dblink('dbname=$DB_NAME2 host=$DB_HOST2 user=$DB_USER','$select FROM $table') AS rt ($dblink_fields))"
-cde0="CREATE TABLE $table1 AS (SELECT * FROM dblink('dbname=$DB_NAME2 host=$DB_HOST2 user=$DB_USER','$select FROM $table') AS rt ($dblink_fields))"		#01
+cde0="CREATE TABLE $table1 AS (SELECT * FROM dblink('dbname=$DB_NAME2 host=$DB_HOST2 user=$DB_USER','$select FROM $table') AS rt ($dblink_fields))"
 cde="psql -U $DB_USER -d $DB_NAME1 -h $DB_HOST1 -t -c \"$cde0\""
 
 if $VERBOSE; then
