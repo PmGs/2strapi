@@ -330,7 +330,7 @@ function 2strapi_type() {
 	s_precision=""
 	s_scale=""
 # echo "2strapi_type type=$type"
-	shared_types=(boolean date integer text)
+	shared_types=(boolean date integer)
 	if [[ " ${shared_types[@]} " =~ " $type " ]]; then
 		s_type=$type
 	elif [[ "$type" == "bigint" ]]; then
@@ -349,7 +349,7 @@ function 2strapi_type() {
 		s_plus=","				
 		s_precision=18
 		s_scale=9
-	elif [[ "$type" =~ "text" ]]; then
+	elif [[ "$type" == "text" ]]; then
 		s_type=string			# Strapi text type (=long text) / string (short text) to be able to create relation
 	else
 		echo "db type ($type) must be mapped to strapi type in 2strapi_type function"
