@@ -335,15 +335,17 @@ function 2strapi_type() {
 		s_type=$type
 	elif [[ "$type" == "bigint" ]]; then
 		s_type=biginteger
-	elif [[ "$type" == "character(1)" ]]; then
+	elif [[ "$type" =~ character\(([0-9]+)\) ]]; then
+		length=${BASH_REMATCH[1]}
 		s_type=string
 		s_plus=","				
-		s_minLength=1
-		s_maxLength=1
-	elif [[ "$type" == "character${SEP2}varying(64)" ]]; then
+		s_minLength=$length
+		s_maxLength=$length
+	elif [[ "$type" =~ character${SEP2}varying\(([0-9]+)\) ]]; then
+		length=${BASH_REMATCH[1]}
 		s_type=string
 		s_plus=","				
-		s_maxLength=64
+		s_maxLength=$length
 	elif [[ "$type" =~ "numeric" ]]; then
 		s_type=decimal
 		s_plus=","				
@@ -351,7 +353,7 @@ function 2strapi_type() {
 		s_scale=9
 	elif [[ "$type" == "text" ]]; then
 		s_type=string			# Strapi text type (=long text) / string (short text) to be able to create relation
-	elif [[ "$type" == "timestamp_without_time_zone" ]]; then
+	elif [[ "$type" == "timestamp${SEP2}without${SEP2}time${SEP2}zone" ]]; then
 		s_type=datetime
 	else
 		echo "db type ($type) must be mapped to strapi type in 2strapi_type function"
