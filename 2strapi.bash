@@ -1,5 +1,5 @@
 #!/bin/bash
-# 250204 2strapi.bash 26/01/25
+# 250207 2strapi.bash 26/01/25
 # Import a table from an origin postgresql db into a table in a strapi project
 #	Create destination table relevant to  Strapi table structure
 #	Create Stapi model
@@ -10,7 +10,7 @@
 #  function 2strapi_type must be completed
 
 ## A useful but dangerous command
-# rm -fR  dist/src/api/<table1>; rm -fR src/api/<table1>; psql <DB_NAME1> -c "DROP TABLE <table1s> CASACDE"
+# rm -fR  dist/src/api/<table1>; rm -fR src/api/<table1>; psql <DB_NAME1> -c "DROP TABLE <table1s> CASCADE; DROP SEQUENCE <table1s>_id_seq"
 #  to delete all from this collection '<table>', to be used if you want to relaunch the script on the same table
 
 ## prerequisites
@@ -351,6 +351,8 @@ function 2strapi_type() {
 		s_scale=9
 	elif [[ "$type" == "text" ]]; then
 		s_type=string			# Strapi text type (=long text) / string (short text) to be able to create relation
+	elif [[ "$type" == "timestamp_without_time_zone" ]]; then
+		s_type=datetime
 	else
 		echo "db type ($type) must be mapped to strapi type in 2strapi_type function"
 		exit 1	
