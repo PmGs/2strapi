@@ -1,5 +1,5 @@
 #!/bin/bash
-# 250207 2strapi.bash 26/01/25
+# 250220 2strapi.bash 26/01/25
 # Import a table from an origin postgresql db into a table in a strapi project
 #	Create destination table relevant to  Strapi table structure
 #	Create Stapi model
@@ -351,6 +351,8 @@ function 2strapi_type() {
 		s_plus=","				
 		s_precision=18
 		s_scale=9
+	elif [[ "$type" == "real" ]]; then
+		s_type=float
 	elif [[ "$type" == "text" ]]; then
 		s_type=string			# Strapi text type (=long text) / string (short text) to be able to create relation
 	elif [[ "$type" == "timestamp${SEP2}without${SEP2}time${SEP2}zone" ]]; then
